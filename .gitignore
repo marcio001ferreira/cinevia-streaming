@@ -1,0 +1,17 @@
+# Arquivos temporários do Word
+~$*.docx
+*.tmp
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+
+# Backups de banco (podem conter dados reais)
+*.dump
+*.backup
+*.bak
