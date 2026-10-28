@@ -72,7 +72,6 @@ Ou pelo **pgAdmin**: crie o banco `cinevia`, abra o Query Tool e execute o conte
 ## Próximas etapas
 
 - Carga completa dos dados
-- Consultas com `JOIN` e agregações, e índices
 - Plano de transações
 - Plano de backup testado
 - Relatório de administração, segurança e LGPD
