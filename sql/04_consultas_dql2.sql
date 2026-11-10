@@ -75,23 +75,23 @@ ORDER BY h.data_hora_inicio DESC;
 SELECT p.nome_plano, COUNT(*) AS total_assinaturas
 FROM assinatura a
 JOIN plano_assinatura p ON p.id_plano = a.id_plano
-GROUP BY p.nome_plano
-ORDER BY total_assinaturas DESC;
+GROUP BY p.id_plano, p.nome_plano
+ORDER BY total_assinaturas DESC, p.nome_plano;
 
 -- Q9. Qual a receita mensal das assinaturas ATIVAS, por plano? (SUM)
 SELECT p.nome_plano, SUM(p.preco_mensal) AS receita_mensal
 FROM assinatura a
 JOIN plano_assinatura p ON p.id_plano = a.id_plano
 WHERE a.status = 'ATIVA'
-GROUP BY p.nome_plano
+GROUP BY p.id_plano, p.nome_plano
 ORDER BY receita_mensal DESC;
 
 -- Q10. Qual a nota média de cada conteúdo? (AVG)
 SELECT c.titulo_original, ROUND(AVG(av.nota), 2) AS nota_media
 FROM avaliacao av
 JOIN conteudo c ON c.id_conteudo = av.id_conteudo
-GROUP BY c.titulo_original
-ORDER BY nota_media DESC;
+GROUP BY c.id_conteudo, c.titulo_original
+ORDER BY nota_media DESC, c.titulo_original;
 
 -- Q11. Qual a menor e a maior duração de episódio de cada série? (MIN/MAX)
 SELECT c.titulo_original AS serie,
@@ -99,14 +99,14 @@ SELECT c.titulo_original AS serie,
        MAX(e.duracao_minutos) AS maior_episodio
 FROM episodio e
 JOIN conteudo c ON c.id_conteudo = e.id_conteudo
-GROUP BY c.titulo_original
+GROUP BY c.id_conteudo, c.titulo_original
 ORDER BY c.titulo_original;
 
 -- Q12. Quantos conteúdos existem em cada gênero?
 SELECT g.nome_genero, COUNT(cg.id_conteudo) AS qtd_conteudos
 FROM genero g
 LEFT JOIN conteudo_genero cg ON cg.id_genero = g.id_genero
-GROUP BY g.nome_genero
+GROUP BY g.id_genero, g.nome_genero
 ORDER BY qtd_conteudos DESC, g.nome_genero;
 
 -- Q13. Quantas avaliações cada usuário fez, incluindo quem fez zero? (COUNT(coluna) ignora NULL)
@@ -122,7 +122,7 @@ SELECT u.nome,
 FROM historico_visualizacao h
 JOIN usuario u ON u.id_usuario = h.id_usuario
 GROUP BY u.id_usuario, u.nome
-ORDER BY horas_assistidas DESC
+ORDER BY horas_assistidas DESC, u.nome
 LIMIT 10;
 
 -- Q15. Resumo dos filmes por classificação indicativa: quantidade, duração média, menor e maior.
@@ -143,7 +143,7 @@ SELECT c.titulo_original AS serie,
 FROM serie s
 JOIN conteudo c ON c.id_conteudo = s.id_conteudo
 JOIN episodio e ON e.id_conteudo = s.id_conteudo
-GROUP BY c.titulo_original
+GROUP BY c.id_conteudo, c.titulo_original
 ORDER BY minutos_totais DESC;
 
 -- ------------------------------------------------------------
@@ -156,10 +156,10 @@ SELECT c.titulo_original,
        ROUND(AVG(av.nota), 2)      AS nota_media
 FROM avaliacao av
 JOIN conteudo c ON c.id_conteudo = av.id_conteudo
-GROUP BY c.titulo_original
+GROUP BY c.id_conteudo, c.titulo_original
 HAVING COUNT(*) >= 2
    AND AVG(av.nota) >= 7
-ORDER BY nota_media DESC;
+ORDER BY nota_media DESC, c.titulo_original;
 
 -- Q18. Quais usuários têm mais de um dispositivo registrado?
 SELECT u.nome, COUNT(d.id_dispositivo) AS qtd_dispositivos
@@ -174,7 +174,7 @@ SELECT p.nome_plano, SUM(p.preco_mensal) AS receita_mensal
 FROM assinatura a
 JOIN plano_assinatura p ON p.id_plano = a.id_plano
 WHERE a.status = 'ATIVA'
-GROUP BY p.nome_plano
+GROUP BY p.id_plano, p.nome_plano
 HAVING SUM(p.preco_mensal) > 100
 ORDER BY receita_mensal DESC;
 
@@ -182,9 +182,9 @@ ORDER BY receita_mensal DESC;
 SELECT c.titulo_original, COUNT(*) AS qtd_exibicoes
 FROM historico_visualizacao h
 JOIN conteudo c ON c.id_conteudo = h.id_conteudo
-GROUP BY c.titulo_original
+GROUP BY c.id_conteudo, c.titulo_original
 HAVING COUNT(*) > 3
-ORDER BY qtd_exibicoes DESC
+ORDER BY qtd_exibicoes DESC, c.titulo_original
 LIMIT 5;
 
 -- Q21. Quais conteúdos têm taxa de conclusão abaixo de 50% nas exibições registradas?
@@ -194,9 +194,9 @@ SELECT c.titulo_original,
        ROUND(100.0 * SUM(CASE WHEN h.concluido THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_conclusao
 FROM historico_visualizacao h
 JOIN conteudo c ON c.id_conteudo = h.id_conteudo
-GROUP BY c.titulo_original
+GROUP BY c.id_conteudo, c.titulo_original
 HAVING 100.0 * SUM(CASE WHEN h.concluido THEN 1 ELSE 0 END) / COUNT(*) < 50
-ORDER BY pct_conclusao;
+ORDER BY pct_conclusao, c.titulo_original;
 
 -- Q22. Quais séries têm mais de 10 episódios cadastrados e duração média acima de 40 minutos?
 SELECT c.titulo_original AS serie,
@@ -204,7 +204,7 @@ SELECT c.titulo_original AS serie,
        ROUND(AVG(e.duracao_minutos), 1) AS duracao_media
 FROM episodio e
 JOIN conteudo c ON c.id_conteudo = e.id_conteudo
-GROUP BY c.titulo_original
+GROUP BY c.id_conteudo, c.titulo_original
 HAVING COUNT(e.id_episodio) > 10
    AND AVG(e.duracao_minutos) > 40
 ORDER BY duracao_media DESC;
@@ -218,4 +218,5 @@ ORDER BY duracao_media DESC;
 -- Com LEFT JOIN e COUNT(coluna), ele aparece com zero.
 -- COUNT(*) conta linhas; COUNT(coluna), SUM, AVG, MIN e MAX ignoram NULL.
 -- AVG(nota) com WHERE nota > 5 calcula a média só das notas de 6 a 10.
--- Agrupe pela chave (id_usuario, nome) para não somar homônimos.
+-- Agrupe pela chave (id_usuario, nome) para não somar homônimos: o mesmo vale para
+-- títulos de conteúdo, nomes de plano e de gênero (por isso o GROUP BY leva o id).

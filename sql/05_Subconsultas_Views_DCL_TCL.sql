@@ -126,7 +126,16 @@ ORDER BY data_inicio;
 
 -- Q13. Crie o papel suporte e dê a ele acesso SÓ à view. Depois teste como suporte.
 -- Para refazer o teste do zero: DROP OWNED BY suporte; DROP ROLE suporte;
-CREATE ROLE suporte NOLOGIN;
+-- CREATE ROLE dá erro se o papel já existir; este bloco só cria quando ainda não existe,
+-- então o script pode ser rodado várias vezes.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'suporte') THEN
+        CREATE ROLE suporte NOLOGIN;
+    END IF;
+END
+$$;
+
 GRANT suporte TO CURRENT_USER;
 GRANT USAGE  ON SCHEMA public           TO suporte;
 GRANT SELECT ON vw_assinaturas_suporte  TO suporte;
@@ -158,6 +167,11 @@ GRANT SELECT ON vw_assinaturas_suporte TO suporte;
 -- ------------------------------------------------------------
 -- Parte 3: TCL (um filme são duas linhas: conteudo + filme)
 -- ------------------------------------------------------------
+
+-- Limpeza preventiva: se uma execução anterior parou no meio, sobram linhas de teste
+-- e a auditoria do Passo 2 mostraria mais de um órfão.
+DELETE FROM conteudo
+WHERE titulo_original IN ('Filme de Teste TCL', 'Filme Descartado TCL', 'Série de Teste TCL');
 
 -- Passo 1. Dois Runs separados, como uma aplicação sem transação. Um filme são DUAS linhas: conteudo + filme. O Run 1 dá certo.
 INSERT INTO conteudo (titulo_original, ano_lancamento, classificacao_indicativa, idioma_original, tipo_conteudo)

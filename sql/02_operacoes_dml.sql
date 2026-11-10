@@ -1,8 +1,9 @@
 -- ============================================================
 -- Cinevia - Plataforma de Streaming
 -- Operações DML do dia a dia (valores ilustrativos)
--- Execute depois do 01_script_ddl.sql e depois de ter dados
--- carregados (os ids usados abaixo precisam existir).
+-- Execute depois do 01_script_ddl.sql e do 01b_carga_dados.sql
+-- (os ids usados abaixo precisam existir). Este script ALTERA os
+-- dados; para repetir o teste do zero, rode 01 e 01b de novo.
 -- ============================================================
 
 -- ------------------------------------------------------------
@@ -19,13 +20,18 @@
 INSERT INTO usuario (nome, email, senha_hash, cpf, data_nascimento)
 VALUES ('Maria Souza', 'maria@exemplo.com', '<hash>', '000.000.000-00', '1995-04-12');
 
+-- O id da Maria é gerado pelo banco; por isso buscamos o id pelo e-mail
+-- (em vez de escrever um número fixo que poderia ser de outra pessoa).
 INSERT INTO assinatura (id_usuario, id_plano, data_inicio, status, forma_pagamento)
-VALUES (1, 2, CURRENT_DATE, 'ATIVA', 'Cartão de crédito');
+VALUES ((SELECT id_usuario FROM usuario WHERE email = 'maria@exemplo.com'),
+        (SELECT id_plano   FROM plano_assinatura WHERE nome_plano = 'Padrão'),
+        CURRENT_DATE, 'ATIVA', 'Cartão de crédito');
 
 -- UPDATE: desligar a renovação automática
 UPDATE assinatura
 SET renovacao_automatica = FALSE
-WHERE id_assinatura = 1;
+WHERE id_usuario = (SELECT id_usuario FROM usuario WHERE email = 'maria@exemplo.com')
+  AND status = 'ATIVA';
 
 -- UPDATE: registrar o acesso a um dispositivo
 UPDATE dispositivo
@@ -68,11 +74,13 @@ BEGIN;
 
 SELECT status, renovacao_automatica
 FROM assinatura
-WHERE id_assinatura = 1
+WHERE id_usuario = (SELECT id_usuario FROM usuario WHERE email = 'maria@exemplo.com')
+  AND status = 'ATIVA'
 FOR UPDATE;          -- a outra transação espera aqui
 
 UPDATE assinatura
 SET status = 'CANCELADA', data_fim = CURRENT_DATE
-WHERE id_assinatura = 1 AND status = 'ATIVA';
+WHERE id_usuario = (SELECT id_usuario FROM usuario WHERE email = 'maria@exemplo.com')
+  AND status = 'ATIVA';
 
 COMMIT;
